@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "pradeepreddyhub/hello-world-war"
-        IMAGE_TAG  = "latest"
+        IMAGE_NAME   = "pradeepreddyhub/hello-world-war"
+        IMAGE_TAG    = "latest"
         DOCKER_CREDS = "dockerhub-creds"
+        CONTAINER_NAME = "hello-world-war-container"
     }
 
     stages {
@@ -37,6 +38,22 @@ pipeline {
         stage('Push Image to Docker Hub') {
             steps {
                 sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                    # Stop and remove existing container if it exists
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
+
+                    # Run container in detached mode
+                    docker run -d \
+                      --name ${CONTAINER_NAME} \
+                      -p 5050:8080 \
+                      ${IMAGE_NAME}:${IMAGE_TAG}
+                '''
             }
         }
     }
