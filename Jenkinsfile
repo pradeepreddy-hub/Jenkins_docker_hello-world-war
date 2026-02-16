@@ -3,6 +3,7 @@ pipeline {
             image 'docker:latest'
             args '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
         } 
+          }
           
     environment {
         IMAGE_NAME   = "pradeepreddyhub/hello-world-war"
