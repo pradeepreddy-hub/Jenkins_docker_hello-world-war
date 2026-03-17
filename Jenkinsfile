@@ -25,7 +25,7 @@ spec:
       mountPath: /home/jenkins/agent
 
   - name: tools
-    image: alpine/helm:latest
+    image: dtzar/helm-kubectl:latest
     command: ["cat"]
     tty: true
     volumeMounts:
