@@ -1,20 +1,18 @@
 pipeline {
     agent {
         kubernetes {
-            yaml '''
+    yaml '''
 apiVersion: v1
 kind: Pod
 spec:
   serviceAccountName: jenkins
-
-  imagePullSecrets:
-  - name: dockerhub-secret
-
   containers:
   - name: jnlp
     image: jenkins/inbound-agent:latest
-    args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
-
+    args: ["$(JENKINS_SECRET)", "$(JENKINS_NAME)"]
+    volumeMounts:
+    - name: workspace-volume
+      mountPath: /home/jenkins/agent
   - name: kaniko
     image: gcr.io/kaniko-project/executor:debug
     command: ["/busybox/cat"]
@@ -22,15 +20,20 @@ spec:
     volumeMounts:
     - name: kaniko-secret
       mountPath: /kaniko/.docker
-
+    - name: workspace-volume
+      mountPath: /home/jenkins/agent
   volumes:
   - name: kaniko-secret
     secret:
       secretName: dockerhub-secret
-
+      items:
+      - key: .dockerconfigjson      # key stored in the secret
+        path: config.json           # filename kaniko expects to find
+  - name: workspace-volume
+    emptyDir: {}
   restartPolicy: Never
 '''
-        }
+}
     }
 
     environment {
