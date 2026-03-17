@@ -1,7 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-    yaml '''
+            yaml '''
 apiVersion: v1
 kind: Pod
 spec:
@@ -25,7 +25,7 @@ spec:
       mountPath: /home/jenkins/agent
 
   - name: tools
-    image: alpine/helm:latest        # has helm + curl + apk
+    image: alpine/helm:latest
     command: ["cat"]
     tty: true
     volumeMounts:
@@ -43,7 +43,7 @@ spec:
     emptyDir: {}
   restartPolicy: Never
 '''
-}
+        }
     }
 
     environment {
@@ -53,7 +53,6 @@ spec:
         HELM_VERSION = "0.2.0"
         JFROG_URL    = "https://trial3sfswa.jfrog.io/artifactory/jenkins-helm"
         KUBE_NS      = "default"
-
         JFROG_CREDS  = credentials('jfrog-creds')
     }
 
@@ -65,27 +64,25 @@ spec:
             }
         }
 
-        stage('Build & Push Image (Kaniko)') {
+        stage('Build & Push Image') {
             steps {
-                container('kaniko') {
-                    sh """
+                container('kaniko') {          // ✅ kaniko for image build only
+                    sh '''
                     /kaniko/executor \
                       --dockerfile=Dockerfile \
-                      --context=`pwd` \
+                      --context=/home/jenkins/agent/workspace/hello-world-war \
                       --destination=$DOCKER_IMAGE:$IMAGE_TAG \
                       --destination=$DOCKER_IMAGE:latest \
                       --skip-tls-verify
-                    """
+                    '''
                 }
             }
         }
 
         stage('Helm Package & Push') {
             steps {
-                container('kaniko') {
-                    sh """
-                    apk add --no-cache curl helm
-
+                container('tools') {           // ✅ tools for helm/curl
+                    sh '''
                     helm lint $HELM_CHART
                     helm package $HELM_CHART
 
@@ -98,17 +95,15 @@ spec:
                     curl -u $JFROG_CREDS_USR:$JFROG_CREDS_PSW \
                       -T index.yaml \
                       ${JFROG_URL}/index.yaml
-                    """
+                    '''
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                container('kaniko') {
-                    sh """
-                    apk add --no-cache kubectl helm curl
-
+                container('tools') {           // ✅ tools for helm deploy
+                    sh '''
                     helm repo add jfrog-helm ${JFROG_URL} \
                       --username $JFROG_CREDS_USR \
                       --password $JFROG_CREDS_PSW \
@@ -121,30 +116,26 @@ spec:
                       --set image.tag=$IMAGE_TAG \
                       --namespace $KUBE_NS \
                       --wait --timeout 2m
-                    """
+                    '''
                 }
             }
         }
 
         stage('Verify') {
             steps {
-                container('kaniko') {
-                    sh """
+                container('tools') {           // ✅ tools for kubectl
+                    sh '''
                     kubectl rollout status deployment/$HELM_CHART -n $KUBE_NS
                     kubectl get pods -n $KUBE_NS
                     kubectl get svc -n $KUBE_NS
-                    """
+                    '''
                 }
             }
         }
     }
 
     post {
-        success {
-            echo "SUCCESS 🚀"
-        }
-        failure {
-            echo "FAILED ❌"
-        }
+        success { echo "SUCCESS 🚀" }
+        failure { echo "FAILED ❌" }
     }
 }
