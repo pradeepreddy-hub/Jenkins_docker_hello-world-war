@@ -4,7 +4,7 @@ pipeline {
         DOCKER_IMAGE = "docker.io/pradeepreddyhub/hello-world"
         IMAGE_TAG    = "${BUILD_NUMBER}"
         HELM_CHART   = "hello-world"
-        HELM_VERSION = "0.1.0"
+        HELM_VERSION = "0.2.0"
         JFROG_URL    = "https://trial3sfswa.jfrog.io/artifactory/jenkins-helm"
         KUBE_NS      = "default"
         DOCKER_CREDS = credentials('dockerhub-creds')
