@@ -1,30 +1,5 @@
 pipeline {
-    agent {
-    kubernetes {
-      yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: jnlp
-    image: jenkins/inbound-agent:latest
-    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
-
-  - name: maven
-    image: pradeepreddyhub/jenkins-image:v1
-    command:
-    - cat
-    tty: true
-
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    command:
-    - cat
-    tty: true
-"""
-    }
-  }
-
+    agent any
     environment {
         DOCKER_IMAGE = "docker.io/pradeepreddyhub/hello-world"
         IMAGE_TAG = "${BUILD_NUMBER}"
